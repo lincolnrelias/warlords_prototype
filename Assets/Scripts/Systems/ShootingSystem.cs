@@ -1,0 +1,86 @@
+﻿using Authoring;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Physics.Stateful;
+using Unity.Transforms;
+using UnityEngine;
+
+namespace Systems
+{
+    [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+    [UpdateAfter(typeof(CollisionDetectionSystem))]
+    public partial struct ShootingSystem : ISystem
+    {
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
+        }
+
+        public void OnUpdate(ref SystemState state)
+        {
+            float currentTime = (float)SystemAPI.Time.ElapsedTime;
+
+            var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+            EntityCommandBuffer ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+
+            foreach (var (attackTimer, soldier, soldierTransform, targetData, entity) in
+                     SystemAPI.Query<RefRW<AttackTimer>, RefRO<Soldier>, RefRO<LocalTransform>, RefRO<TargetData>>()
+                         .WithEntityAccess())
+            {
+                if (currentTime - attackTimer.ValueRO.lastAttackTime < attackTimer.ValueRO.attackCooldown) continue;
+
+                float distance = math.distance(soldierTransform.ValueRO.Position, targetData.ValueRO.TargetPosition);
+
+                if (distance <= soldier.ValueRO.shootingRange)
+                {
+                    attackTimer.ValueRW.lastAttackTime = currentTime;
+                    attackTimer.ValueRW.attackCooldown = 1f / soldier.ValueRO.atkSpeed;
+
+                    float3 worldSpawnPosition = soldierTransform.ValueRO.Position +
+                                                math.mul(soldierTransform.ValueRO.Rotation,
+                                                    soldier.ValueRO.bulletSpawnOffset);
+                    quaternion worldBulletRotation = math.mul(soldierTransform.ValueRO.Rotation,
+                        soldier.ValueRO.bulletSpawnRotation);
+
+                    Entity bulletEntity = ecb.Instantiate(soldier.ValueRO.bulletPrefab);
+
+                    ecb.SetComponent(bulletEntity, new LocalTransform
+                    {
+                        Position = worldSpawnPosition,
+                        Rotation = worldBulletRotation,
+                        Scale = 1f
+                    });
+
+                    ecb.SetComponent(bulletEntity, new Bullet
+                    {
+                        damage = soldier.ValueRO.shootingDamage,
+                        maxLifetime = 5,
+                        timeOfCreation = SystemAPI.Time.ElapsedTime
+                    });
+
+                    float3 shootDirection = math.normalize(targetData.ValueRO.TargetPosition - worldSpawnPosition);
+
+                    uint seed = (uint)(currentTime * 1000000 + entity.Index);
+                    Unity.Mathematics.Random rng = new Unity.Mathematics.Random(seed);
+
+                    float spread = soldier.ValueRO.accuracy;
+                    float3 randomOffset = new float3(
+                        rng.NextFloat(-spread, spread),
+                        rng.NextFloat(-spread, spread),
+                        rng.NextFloat(-spread, spread) * 0.5f
+                    );
+                    float3 finalDirection = math.normalize(shootDirection + randomOffset);
+                    finalDirection.y = soldierTransform.ValueRO.Position.y;
+                    ecb.SetComponent(bulletEntity, new PhysicsVelocity
+                    {
+                        Linear = finalDirection * soldier.ValueRO.shootingForce,
+                        Angular = float3.zero
+                    });
+                }
+            }
+        }
+    }
+}
