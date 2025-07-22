@@ -14,7 +14,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: minDistanceToTarget
-      value: 10
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: collisionMask.m_Bits

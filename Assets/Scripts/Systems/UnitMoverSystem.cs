@@ -1,103 +1,125 @@
+using Authoring;
+using Data;
 using Unity.Burst;
-using Unity.Entities;
-using Unity.Transforms;
-using Unity.Mathematics;
-using Unity.Physics;
 using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 
-partial struct UnitMoverSystem : ISystem
+namespace Systems
 {
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(FlowFieldSystem))]
+    public partial struct FlowFieldMovementSystem : ISystem
     {
-        var query = SystemAPI.QueryBuilder().WithAll<LocalTransform, UnitMover>().Build();
-        var transforms = query.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
-        var allPositions = new NativeArray<float3>(transforms.Length, Allocator.TempJob);
+        private ComponentLookup<FlowFieldData> flowFieldLookup;
 
-        for (int i = 0; i < transforms.Length; i++)
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
         {
-            allPositions[i] = transforms[i].Position;
+            flowFieldLookup = state.GetComponentLookup<FlowFieldData>(true);
+            state.RequireForUpdate<FlowFieldSettings>();
         }
 
-        UnitMoverJob unitMoverJob = new UnitMoverJob
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
         {
-            deltaTime = SystemAPI.Time.DeltaTime,
-            allPositions = allPositions
-        };
-
-        var jobHandle = unitMoverJob.ScheduleParallel(state.Dependency);
-        jobHandle.Complete();
-
-        transforms.Dispose();
-        allPositions.Dispose();
-    }
-}
-
-[BurstCompile]
-public partial struct UnitMoverJob : IJobEntity
-{
-    public float deltaTime;
-    [ReadOnly] public NativeArray<float3> allPositions;
-
-    public void Execute(ref LocalTransform localTransform, in UnitMover unitMover,
-        ref PhysicsVelocity physicsVelocity, ref TargetData targetData)
-    {
-        float3 moveDirection = targetData.TargetPosition - localTransform.Position;
-        float3 avoidanceForce = CalculateAvoidance(localTransform.Position, unitMover);
-
-        float reachedTargetDistanceSq = unitMover.minDistanceToTarget * unitMover.minDistanceToTarget;
-        if (math.lengthsq(moveDirection) < reachedTargetDistanceSq)
-        {
-            physicsVelocity.Linear = float3.zero;
-            physicsVelocity.Angular = float3.zero;
-            targetData.isInRange = true;
-        }
-        else
-        {
-            targetData.isInRange = false;
-
-            // Combine target direction with avoidance
-            float3 targetDir = math.normalize(moveDirection);
-            float3 finalDirection = math.normalize(targetDir + avoidanceForce * unitMover.avoidanceWeight);
-
-            physicsVelocity.Linear = finalDirection * unitMover.moveSpeed;
-            physicsVelocity.Angular = float3.zero;
-        }
-
-        // Rotate towards final movement direction
-        if (math.lengthsq(physicsVelocity.Linear) > 0.01f)
-        {
-            float3 lookDirection = math.normalize(physicsVelocity.Linear);
-            localTransform.Rotation = math.slerp(localTransform.Rotation,
-                quaternion.LookRotation(lookDirection, math.up()),
-                deltaTime * unitMover.rotationSpeed);
-        }
-    }
-
-    private float3 CalculateAvoidance(float3 position, UnitMover unitMover)
-    {
-        float3 separationForce = float3.zero;
-        int neighborCount = 0;
-
-        for (int i = 0; i < allPositions.Length; i++)
-        {
-            float3 otherPos = allPositions[i];
-            float3 offset = position - otherPos;
-            float distanceSq = math.lengthsq(offset);
-
-            if (distanceSq > 0.01f && distanceSq < unitMover.avoidanceRadius * unitMover.avoidanceRadius)
+            flowFieldLookup.Update(ref state);
+            var settings = SystemAPI.GetSingleton<FlowFieldSettings>();
+            
+            // Get flow field entities
+            var flowFieldQuery = SystemAPI.QueryBuilder().WithAll<FlowFieldData>().Build();
+            var flowFieldEntities = flowFieldQuery.ToEntityArray(Allocator.TempJob);
+            var flowFieldDatas = flowFieldQuery.ToComponentDataArray<FlowFieldData>(Allocator.TempJob);
+            
+            float deltaTime = SystemAPI.Time.DeltaTime;
+            
+            foreach (var (mover, unit, transform, targetData) in 
+                SystemAPI.Query<RefRW<UnitMover>, RefRO<Unit>, RefRW<LocalTransform>, RefRO<TargetData>>())
             {
-                separationForce += math.normalize(offset) / math.sqrt(distanceSq);
-                neighborCount++;
+                if (!targetData.ValueRO.HasTarget) 
+                    continue;
+                
+                // Find flow field for this unit's faction
+                FlowFieldData? unitFlowField = null;
+                for (int i = 0; i < flowFieldDatas.Length; i++)
+                {
+                    if (flowFieldDatas[i].faction == unit.ValueRO.faction)
+                    {
+                        unitFlowField = flowFieldDatas[i];
+                        break;
+                    }
+                }
+                
+                if (!unitFlowField.HasValue || !unitFlowField.Value.flowField.IsCreated)
+                {
+                    continue;
+                }
+                
+                var flowField = unitFlowField.Value;
+                ref var blob = ref flowField.flowField.Value;
+                
+                // Check distance to target - stop if close enough
+                float distanceToTarget = math.distance(transform.ValueRO.Position, targetData.ValueRO.TargetPosition);
+                if (distanceToTarget <= mover.ValueRO.minDistanceToTarget) // Use fixed small distance instead of mover setting
+                    continue;
+                
+                // Get flow field direction at current position
+                int2 gridPos = WorldToGrid(transform.ValueRO.Position, flowField);
+                if (!IsValidGridPosition(gridPos, flowField.gridSize))
+                {
+                    continue;
+                }
+                
+                int index = GridToIndex(gridPos, flowField.gridSize);
+                
+                
+                float2 flowDirection = blob.directions[index];
+                
+                
+                if (math.lengthsq(flowDirection) < 0.01f)
+                {
+                    continue;
+                }
+                
+                // Convert 2D flow direction to 3D movement direction
+                float3 moveDirection = new float3(flowDirection.x, 0, flowDirection.y);
+                
+                // Move the unit
+                float3 velocity = moveDirection * mover.ValueRO.moveSpeed * deltaTime;
+                transform.ValueRW.Position += velocity;
+                
+                // Rotate towards movement direction
+                if (math.lengthsq(moveDirection) > 0.01f)
+                {
+                    quaternion targetRotation = quaternion.LookRotationSafe(moveDirection, math.up());
+                    transform.ValueRW.Rotation = math.slerp(transform.ValueRO.Rotation, targetRotation, 
+                        mover.ValueRO.rotationSpeed * deltaTime);
+                }
             }
+            
+            flowFieldEntities.Dispose();
+            flowFieldDatas.Dispose();
         }
-
-        if (neighborCount > 0)
+        
+        private int2 WorldToGrid(float3 worldPos, FlowFieldData flowField)
         {
-            separationForce /= neighborCount;
-            separationForce *= unitMover.separationStrength;
+            float3 localPos = worldPos - flowField.gridOrigin;
+            return new int2(
+                (int)math.floor(localPos.x / flowField.cellSize),
+                (int)math.floor(localPos.z / flowField.cellSize)
+            );
         }
-
-        return separationForce;
+        
+        private int GridToIndex(int2 gridPos, int2 gridSize)
+        {
+            return gridPos.y * gridSize.x + gridPos.x;
+        }
+        
+        private bool IsValidGridPosition(int2 gridPos, int2 gridSize)
+        {
+            return gridPos.x >= 0 && gridPos.x < gridSize.x && 
+                   gridPos.y >= 0 && gridPos.y < gridSize.y;
+        }
     }
 }

@@ -95,7 +95,6 @@ public struct CollisionJob : ICollisionEventsJob
             var health = healthLookup[unitEntity];
             health.currentHealth -= bullet.damage;
             healthLookup[unitEntity] = health;
-            Debug.Log(unitEntity.Index + " took damage: " + bullet.damage);
             if (health.currentHealth <= 0)
             {
                 ecbWriter.AddComponent<FlagForCleanup>(sortKey, unitEntity);

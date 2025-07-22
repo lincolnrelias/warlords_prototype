@@ -315,8 +315,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 281577393}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.16107202, y: 0.19316834, z: -0.032165017, w: 0.9673196}
-  m_LocalPosition: {x: -18.979643, y: 15.055488, z: -29.84742}
+  m_LocalRotation: {x: -0.38814047, y: -0.38273275, z: 0.18149936, w: -0.81848675}
+  m_LocalPosition: {x: -11.003898, y: 42.601414, z: -40.340176}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -834,6 +834,9 @@ GameObject:
   - component: {fileID: 841931067}
   - component: {fileID: 841931066}
   - component: {fileID: 841931068}
+  - component: {fileID: 841931069}
+  - component: {fileID: 841931070}
+  - component: {fileID: 841931071}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -881,6 +884,88 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   clickThreshold: 25
+--- !u!114 &841931069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 841931065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55494d7bcc4d4654b59443f99b9fc19e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableVisualization: 1
+  factionToVisualize: 0
+  friendlyColor: {r: 0, g: 0, b: 1, a: 1}
+  hostileColor: {r: 1, g: 0, b: 0, a: 1}
+  obstacleColor: {r: 0, g: 0, b: 0, a: 1}
+  targetColor: {r: 0, g: 1, b: 0, a: 1}
+  arrowLength: 1
+  arrowHeadSize: 0.3
+  showCosts: 0
+  showObstacles: 1
+  showTargets: 1
+  limitDrawDistance: 1
+  maxDrawDistance: 500
+  maxCellsToVisualize: 10000
+  onlyShowAroundUnits: 1
+--- !u!114 &841931070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 841931065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3bcd8155a5fe418a8a50047bce568269, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  showDebugInfo: 1
+  debugKey: 282
+--- !u!114 &841931071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 841931065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c94b03c1145742a9b6c0b833adfe7bbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoConfigureGrid: 1
+  gridPadding: 20
+  showDebugLogs: 0
+  suggestedGridSize:
+    x: 50
+    y: 50
+  suggestedCellSize: 2
+  suggestedOrigin:
+    x: 0
+    y: 0
+    z: 0
+  unitBoundsMin:
+    x: 0
+    y: 0
+    z: 0
+  unitBoundsMax:
+    x: 0
+    y: 0
+    z: 0
+  unitBoundsSize:
+    x: 0
+    y: 0
+    z: 0
+  unitBoundsCenter:
+    x: 0
+    y: 0
+    z: 0
+  friendlyCount: 0
+  hostileCount: 0
 --- !u!1 &866681999
 GameObject:
   m_ObjectHideFlags: 0

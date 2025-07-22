@@ -191,7 +191,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   accuracy: 0.1
-  shootingDamage: 25
+  shootingDamage: 100
   shootingRange: 15
   atkSpeed: 1
   shootingForce: 30

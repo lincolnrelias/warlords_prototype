@@ -10,6 +10,7 @@ public class UnitAuthoring : MonoBehaviour
 {
     [SerializeField] public Faction faction;
     [SerializeField] public Faction targetFaction;
+    public bool isDebuggable = false;
     public float maxHealth = 100f;
 
     public class Baker : Baker<UnitAuthoring>
@@ -29,6 +30,7 @@ public class UnitAuthoring : MonoBehaviour
             {
                 faction = authoring.faction,
                 targetFaction = authoring.targetFaction,
+                isDebuggable = authoring.isDebuggable,
                 unitID = unitID // Add ID to unit component
             });
 
@@ -70,6 +72,7 @@ public struct Unit : IComponentData, IEnableableComponent
     public Faction faction;
     public Faction targetFaction;
     public int unitID; // Sequential ID for this unit
+    public bool isDebuggable;
 }
 
 public struct TargetUpdateSchedule : IComponentData
