@@ -33,6 +33,7 @@ public struct FlowFieldSettings : IComponentData
     public bool enableVisualization;
     public float neighborCostMultiplier;
     public Faction visualizedFaction;
+    public float maxCostChangePerUpdate; 
 }
 
 // Helper struct for flow field calculations

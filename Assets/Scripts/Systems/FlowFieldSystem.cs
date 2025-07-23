@@ -185,7 +185,7 @@ namespace Systems
         private void CalculateCostField(
             NativeArray<float> costField,
             NativeArray<bool> obstacles,
-            NativeArray<float> weightMultipliers,  // Add this parameter
+            NativeArray<float> weightMultipliers,
             NativeQueue<int2> queue,
             FlowFieldSettings settings)
         {
@@ -202,26 +202,29 @@ namespace Systems
             var costs = new NativeArray<float>(8, Allocator.Temp);
             costs[0] = 1f; costs[1] = 1.414f; costs[2] = 1f; costs[3] = 1.414f;
             costs[4] = 1f; costs[5] = 1.414f; costs[6] = 1f; costs[7] = 1.414f;
-    
+
             while (queue.TryDequeue(out int2 current))
             {
                 int currentIndex = GridToIndex(current, settings.gridSize);
                 float currentCost = costField[currentIndex];
-        
+
                 for (int i = 0; i < directions.Length; i++)
                 {
                     int2 neighbor = current + directions[i];
-            
+
                     if (!IsValidGridPosition(neighbor, settings.gridSize))
                         continue;
-                
+
                     int neighborIndex = GridToIndex(neighbor, settings.gridSize);
-            
+
                     if (obstacles[neighborIndex])
                         continue;
             
                     // Apply weight multiplier
-                    float newCost = currentCost + (costs[i] * weightMultipliers[neighborIndex]);
+                    float calculatedCost = currentCost + (costs[i] * weightMultipliers[neighborIndex]);
+                    float newCost = calculatedCost >= currentCost
+                        ? math.min(calculatedCost, currentCost + settings.maxCostChangePerUpdate)
+                        : math.max(calculatedCost, currentCost - settings.maxCostChangePerUpdate);
             
                     if (newCost < costField[neighborIndex])
                     {

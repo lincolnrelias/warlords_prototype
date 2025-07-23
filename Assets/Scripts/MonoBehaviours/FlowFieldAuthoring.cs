@@ -15,7 +15,7 @@ namespace MonoBehaviours
         public float3 worldOrigin = float3.zero;
         public float maxCost = 1000f;
         public float neighborCostMultiplier = 2.5f;
-        
+        public float maxCostChangePerUpdate = 10f;
         [Header("Visualization")]
         public bool enableVisualization = true;
         public Faction visualizedFaction = Faction.Friendly;
@@ -35,7 +35,8 @@ namespace MonoBehaviours
                     neighborCostMultiplier = authoring.neighborCostMultiplier,
                     maxCost = authoring.maxCost,
                     enableVisualization = authoring.enableVisualization,
-                    visualizedFaction = authoring.visualizedFaction
+                    visualizedFaction = authoring.visualizedFaction,
+                    maxCostChangePerUpdate = authoring.maxCostChangePerUpdate
                 });
             }
         }

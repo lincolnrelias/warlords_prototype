@@ -1,4 +1,3 @@
-using Authoring;
 using Data;
 using Unity.Burst;
 using Unity.Collections;
@@ -27,79 +26,88 @@ namespace Systems
             flowFieldLookup.Update(ref state);
             var settings = SystemAPI.GetSingleton<FlowFieldSettings>();
             
-            // Get flow field entities
+            // Cache flow field data for the frame
             var flowFieldQuery = SystemAPI.QueryBuilder().WithAll<FlowFieldData>().Build();
             var flowFieldEntities = flowFieldQuery.ToEntityArray(Allocator.TempJob);
             var flowFieldDatas = flowFieldQuery.ToComponentDataArray<FlowFieldData>(Allocator.TempJob);
             
             float deltaTime = SystemAPI.Time.DeltaTime;
             
+            // Process all units with targets
             foreach (var (mover, unit, transform, targetData) in 
                 SystemAPI.Query<RefRW<UnitMover>, RefRO<Unit>, RefRW<LocalTransform>, RefRO<TargetData>>())
             {
-                if (!targetData.ValueRO.HasTarget) 
-                    continue;
+                if (!targetData.ValueRO.HasTarget) continue;
                 
-                // Find flow field for this unit's faction
-                FlowFieldData? unitFlowField = null;
-                for (int i = 0; i < flowFieldDatas.Length; i++)
+                var flowField = FindFlowFieldForFaction(unit.ValueRO.faction, flowFieldDatas);
+                if (!flowField.HasValue || !flowField.Value.flowField.IsCreated) continue;
+                
+                var currentPos = transform.ValueRO.Position;
+                var targetPos = targetData.ValueRO.TargetPosition;
+                
+                bool withinRange = math.distance(currentPos, targetPos) <= mover.ValueRO.minDistanceToTarget;
+                
+                if (withinRange)
                 {
-                    if (flowFieldDatas[i].faction == unit.ValueRO.faction)
-                    {
-                        unitFlowField = flowFieldDatas[i];
-                        break;
-                    }
-                }
-                
-                if (!unitFlowField.HasValue || !unitFlowField.Value.flowField.IsCreated)
-                {
-                    continue;
-                }
-                
-                var flowField = unitFlowField.Value;
-                ref var blob = ref flowField.flowField.Value;
-                
-                // Check distance to target - stop if close enough
-                float distanceToTarget = math.distance(transform.ValueRO.Position, targetData.ValueRO.TargetPosition);
-                if (distanceToTarget <= mover.ValueRO.minDistanceToTarget) // Use fixed small distance instead of mover setting
-                    continue;
-                
-                // Get flow field direction at current position
-                int2 gridPos = WorldToGrid(transform.ValueRO.Position, flowField);
-                if (!IsValidGridPosition(gridPos, flowField.gridSize))
-                {
+                    // Rotate towards target when in range
+                    var directionToTarget = math.normalize(targetPos - currentPos);
+                    RotateTowards(ref transform.ValueRW, directionToTarget, mover.ValueRO, deltaTime);
                     continue;
                 }
                 
-                int index = GridToIndex(gridPos, flowField.gridSize);
+                // Sample flow field at current position
+                var flowDirection = SampleFlowField(currentPos, flowField.Value);
+                if (math.lengthsq(flowDirection) < 0.01f) continue;
                 
-                
-                float2 flowDirection = blob.directions[index];
-                
-                
-                if (math.lengthsq(flowDirection) < 0.01f)
-                {
-                    continue;
-                }
-                
-                // Convert 2D flow direction to 3D movement direction
-                float3 moveDirection = new float3(flowDirection.x, 0, flowDirection.y);
-                
-                // Move the unit
-                float3 velocity = moveDirection * mover.ValueRO.moveSpeed * deltaTime;
-                transform.ValueRW.Position += velocity;
-                
-                // Rotate towards movement direction
-                if (math.lengthsq(moveDirection) > 0.01f)
-                {
-                    quaternion targetRotation = quaternion.LookRotationSafe(moveDirection, math.up());
-                    transform.ValueRW.Rotation = math.slerp(transform.ValueRO.Rotation, targetRotation, 
-                        mover.ValueRO.rotationSpeed * deltaTime);
-                }
+                // Apply movement and rotation
+                MoveUnit(ref transform.ValueRW, flowDirection, mover.ValueRO, deltaTime);
             }
             
             flowFieldEntities.Dispose();
             flowFieldDatas.Dispose();
+        }
+
+        private FlowFieldData? FindFlowFieldForFaction(Faction faction, NativeArray<FlowFieldData> flowFields)
+        {
+            for (int i = 0; i < flowFields.Length; i++)
+            {
+                if (flowFields[i].faction == faction)
+                    return flowFields[i];
+            }
+            return null;
+        }
+
+        private float2 SampleFlowField(float3 worldPos, FlowFieldData flowField)
+        {
+            var gridPos = WorldToGrid(worldPos, flowField);
+            
+            if (!IsValidGridPosition(gridPos, flowField.gridSize))
+                return float2.zero;
+            
+            int index = GridToIndex(gridPos, flowField.gridSize);
+            return flowField.flowField.Value.directions[index];
+        }
+
+        private void MoveUnit(ref LocalTransform transform, float2 flowDirection, UnitMover mover, float deltaTime)
+        {
+            var moveDirection = new float3(flowDirection.x, 0, flowDirection.y);
+            var velocity = moveDirection * mover.moveSpeed * deltaTime;
+            
+            // Apply movement
+            transform.Position += velocity;
+            
+            // Apply rotation towards movement direction
+            RotateTowards(ref transform, moveDirection, mover, deltaTime);
+        }
+
+        private void RotateTowards(ref LocalTransform transform, float3 direction, UnitMover mover, float deltaTime)
+        {
+            if (math.lengthsq(direction) > 0.01f)
+            {
+                var targetRotation = quaternion.LookRotationSafe(direction, math.up());
+                transform.Rotation = math.slerp(transform.Rotation, targetRotation, 
+                    mover.rotationSpeed * deltaTime);
+            }
         }
         
         private int2 WorldToGrid(float3 worldPos, FlowFieldData flowField)
