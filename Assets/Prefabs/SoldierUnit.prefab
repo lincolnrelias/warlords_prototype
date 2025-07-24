@@ -57,8 +57,12 @@ PrefabInstance:
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
+      propertyPath: rotationSpeed
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: minDistanceToTarget
-      value: 10
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: collisionMask.m_Bits
@@ -71,6 +75,10 @@ PrefabInstance:
     - target: {fileID: 4156511599131056581, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: m_IsKinematic
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4310242398367617491, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
+      propertyPath: maxHealth
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4310242398367617491, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: targetFaction
@@ -190,11 +198,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ae279bb95004810868faf7fcd3bba52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  accuracy: 0.1
-  shootingDamage: 100
+  accuracy: 0.2
+  shootingDamage: 25
   shootingRange: 15
-  atkSpeed: 1
-  shootingForce: 30
+  atkSpeed: 0.5
+  shootingForce: 100
   shotPoint: {fileID: 5321886856608749615}
   bulletPrefab: {fileID: 6882168586075182343, guid: 208b6ef3d18fa904e8534a71e3c32b90, type: 3}
 --- !u!114 &-8638091909255539052

@@ -9,6 +9,7 @@ namespace Authoring
         public float accuracy = .5f;
         public int shootingDamage = 10;
         public int shootingRange = 15;
+        [Tooltip("Attacks per second")]
         public float atkSpeed = 2.0f;
         public float shootingForce = 10.0f;
         public Transform shotPoint;
