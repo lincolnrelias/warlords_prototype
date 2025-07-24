@@ -18,6 +18,9 @@ public class FlowFieldHelper : MonoBehaviour
     public float3 suggestedOrigin = float3.zero;
     public float neighborCostMultiplier = 2.5f;
     public float maxCostChangePerUpdate = 10f;
+    [Tooltip("How many cells to aim for")]
+    public float suggestedGridCellCount = 100f; 
+    
     [Header("Current Scene Analysis")]
     [SerializeField] private float3 unitBoundsMin;
     [SerializeField] private float3 unitBoundsMax;
@@ -74,7 +77,7 @@ public class FlowFieldHelper : MonoBehaviour
         
         // Calculate suggested settings
         float3 paddedSize = unitBoundsSize + new float3(gridPadding, 0, gridPadding);
-        suggestedCellSize = math.max(1f, math.max(paddedSize.x, paddedSize.z) / 100f); // Aim for ~100x100 grid
+        suggestedCellSize = math.max(1f, math.max(paddedSize.x, paddedSize.z) / suggestedGridCellCount); 
         
         suggestedGridSize = new int2(
             math.max(10, (int)math.ceil(paddedSize.x / suggestedCellSize)),

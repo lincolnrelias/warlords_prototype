@@ -122,7 +122,7 @@ namespace Systems
                 obstacles[i] = false;
             }
 
-// Create weight multiplier array
+            // Create weight multiplier array
             var weightMultipliers = new NativeArray<float>(totalCells, allocator);
             for (int i = 0; i < totalCells; i++)
             {
