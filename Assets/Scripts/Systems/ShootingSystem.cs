@@ -1,4 +1,4 @@
-﻿using Authoring;
+using Authoring;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -32,9 +32,21 @@ namespace Systems
             {
                 if (currentTime - attackTimer.ValueRO.lastAttackTime < attackTimer.ValueRO.attackCooldown) continue;
 
+                if (!targetData.ValueRO.HasTarget || targetData.ValueRO.TargetEntity == Entity.Null) continue;
+
+                if (!state.EntityManager.Exists(targetData.ValueRO.TargetEntity)) continue;
+
                 float distance = math.distance(soldierTransform.ValueRO.Position, targetData.ValueRO.TargetPosition);
 
-                if (distance <= soldier.ValueRO.shootingRange)
+                if (distance > soldier.ValueRO.shootingRange) continue;
+
+                float3 directionToTarget = math.normalize(targetData.ValueRO.TargetPosition - soldierTransform.ValueRO.Position);
+                float3 forwardDirection = math.mul(soldierTransform.ValueRO.Rotation, new float3(0, 0, 1));
+                
+                float facingDot = math.dot(forwardDirection, directionToTarget);
+                float maxFacingAngle = math.cos(math.radians(soldier.ValueRO.facingTolerance));
+                
+                if (facingDot >= maxFacingAngle)
                 {
                     attackTimer.ValueRW.lastAttackTime = currentTime;
                     attackTimer.ValueRW.attackCooldown = 1f / soldier.ValueRO.atkSpeed;

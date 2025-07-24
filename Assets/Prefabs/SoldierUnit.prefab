@@ -202,7 +202,8 @@ MonoBehaviour:
   shootingDamage: 25
   shootingRange: 15
   atkSpeed: 0.5
-  shootingForce: 100
+  shootingForce: 40
+  facingTolerance: 5
   shotPoint: {fileID: 5321886856608749615}
   bulletPrefab: {fileID: 6882168586075182343, guid: 208b6ef3d18fa904e8534a71e3c32b90, type: 3}
 --- !u!114 &-8638091909255539052

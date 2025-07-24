@@ -12,6 +12,8 @@ namespace Authoring
         [Tooltip("Attacks per second")]
         public float atkSpeed = 2.0f;
         public float shootingForce = 10.0f;
+        [Tooltip("Maximum angle deviation from target to allow shooting (degrees)")]
+        public float facingTolerance = 10f;
         public Transform shotPoint;
         public GameObject bulletPrefab;
 
@@ -30,6 +32,7 @@ namespace Authoring
                     shootingRange = authoring.shootingRange,
                     atkSpeed = authoring.atkSpeed,
                     shootingForce = authoring.shootingForce,
+                    facingTolerance = authoring.facingTolerance,
                     bulletSpawnOffset = authoring.shotPoint.localPosition, // Store as local offset
                     bulletSpawnRotation = authoring.bulletPrefab.transform.rotation,
                     bulletPrefab = bulletPrefabEntity
@@ -50,8 +53,9 @@ namespace Authoring
         public int shootingRange;
         public float shootingForce;
         public float atkSpeed;
-        public float3 bulletSpawnOffset; // Changed from bulletSpawnPosition
+        public float facingTolerance;
+        public float3 bulletSpawnOffset;
         public quaternion bulletSpawnRotation;
-        public Entity bulletPrefab; // Add this to store the prefab entity
+        public Entity bulletPrefab;
     }
 }
