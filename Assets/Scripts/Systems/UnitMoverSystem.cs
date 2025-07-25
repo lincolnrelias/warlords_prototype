@@ -49,18 +49,26 @@ namespace Systems
                 
                 if (withinRange)
                 {
-                    // Rotate towards target when in range
+                    // Gradually slow down when in range
                     var directionToTarget = math.normalize(targetPos - currentPos);
+                    ApplyDeceleration(ref mover.ValueRW, deltaTime);
+                    transform.ValueRW.Position += mover.ValueRW.currentVelocity * deltaTime;
                     RotateTowards(ref transform.ValueRW, directionToTarget, mover.ValueRO, deltaTime);
                     continue;
                 }
                 
                 // Sample flow field at current position
                 var flowDirection = SampleFlowField(currentPos, flowField.Value);
-                if (math.lengthsq(flowDirection) < 0.01f) continue;
                 
-                // Apply movement and rotation
-                MoveUnit(ref transform.ValueRW, flowDirection, mover.ValueRO, deltaTime);
+                // If flow field direction is too weak, use direct movement to target
+                if (math.lengthsq(flowDirection) < 0.01f)
+                {
+                    var directDirection = math.normalize(targetPos - currentPos);
+                    flowDirection = new float2(directDirection.x, directDirection.z);
+                }
+                
+                // Apply movement and rotation with smoothing
+                MoveUnit(ref transform.ValueRW, flowDirection, ref mover.ValueRW, deltaTime);
             }
             
             flowFieldEntities.Dispose();
@@ -79,25 +87,62 @@ namespace Systems
 
         private float2 SampleFlowField(float3 worldPos, FlowFieldData flowField)
         {
-            var gridPos = WorldToGrid(worldPos, flowField);
+            float3 localPos = worldPos - flowField.gridOrigin;
+            float2 gridPosFloat = new float2(localPos.x / flowField.cellSize, localPos.z / flowField.cellSize);
             
-            if (!IsValidGridPosition(gridPos, flowField.gridSize))
+            int2 gridPos00 = new int2((int)math.floor(gridPosFloat.x), (int)math.floor(gridPosFloat.y));
+            
+            // If completely outside flow field, return zero (will trigger fallback)
+            if (!IsValidGridPosition(gridPos00, flowField.gridSize) &&
+                !IsValidGridPosition(gridPos00 + new int2(1, 0), flowField.gridSize) &&
+                !IsValidGridPosition(gridPos00 + new int2(0, 1), flowField.gridSize) &&
+                !IsValidGridPosition(gridPos00 + new int2(1, 1), flowField.gridSize))
+            {
                 return float2.zero;
+            }
             
-            int index = GridToIndex(gridPos, flowField.gridSize);
-            return flowField.flowField.Value.directions[index];
+            int2 gridPos10 = gridPos00 + new int2(1, 0);
+            int2 gridPos01 = gridPos00 + new int2(0, 1);
+            int2 gridPos11 = gridPos00 + new int2(1, 1);
+            
+            float2 fractionalPart = gridPosFloat - new float2(gridPos00.x, gridPos00.y);
+            
+            // For edge cases, use the nearest valid direction instead of zero
+            float2 value00 = GetFlowFieldValue(gridPos00, flowField);
+            float2 value10 = GetFlowFieldValue(gridPos10, flowField);
+            float2 value01 = GetFlowFieldValue(gridPos01, flowField);
+            float2 value11 = GetFlowFieldValue(gridPos11, flowField);
+            
+            float2 interpolatedX0 = math.lerp(value00, value10, fractionalPart.x);
+            float2 interpolatedX1 = math.lerp(value01, value11, fractionalPart.x);
+            
+            return math.lerp(interpolatedX0, interpolatedX1, fractionalPart.y);
         }
 
-        private void MoveUnit(ref LocalTransform transform, float2 flowDirection, UnitMover mover, float deltaTime)
+        private void MoveUnit(ref LocalTransform transform, float2 flowDirection, ref UnitMover mover, float deltaTime)
         {
-            var moveDirection = new float3(flowDirection.x, 0, flowDirection.y);
-            var velocity = moveDirection * mover.moveSpeed * deltaTime;
+            var desiredDirection = new float3(flowDirection.x, 0, flowDirection.y);
+            
+            // Apply steering behavior with acceleration/deceleration
+            var steering = CalculateSteering(desiredDirection, mover, deltaTime);
+            mover.currentVelocity += steering * deltaTime;
+            
+            // Limit velocity to max speed
+            float currentSpeed = math.length(mover.currentVelocity);
+            if (currentSpeed > mover.moveSpeed)
+            {
+                mover.currentVelocity = math.normalize(mover.currentVelocity) * mover.moveSpeed;
+            }
             
             // Apply movement
-            transform.Position += velocity;
+            transform.Position += mover.currentVelocity * deltaTime;
             
-            // Apply rotation towards movement direction
-            RotateTowards(ref transform, moveDirection, mover, deltaTime);
+            // Apply rotation towards movement direction (smoother)
+            if (currentSpeed > 0.1f)
+            {
+                var normalizedVelocity = math.normalize(mover.currentVelocity);
+                RotateTowards(ref transform, normalizedVelocity, mover, deltaTime);
+            }
         }
 
         private void RotateTowards(ref LocalTransform transform, float3 direction, UnitMover mover, float deltaTime)
@@ -128,6 +173,58 @@ namespace Systems
         {
             return gridPos.x >= 0 && gridPos.x < gridSize.x && 
                    gridPos.y >= 0 && gridPos.y < gridSize.y;
+        }
+
+        private float2 GetFlowFieldValue(int2 gridPos, FlowFieldData flowField)
+        {
+            if (IsValidGridPosition(gridPos, flowField.gridSize))
+            {
+                return flowField.flowField.Value.directions[GridToIndex(gridPos, flowField.gridSize)];
+            }
+            
+            // Find nearest valid grid position
+            int2 clampedPos = new int2(
+                math.clamp(gridPos.x, 0, flowField.gridSize.x - 1),
+                math.clamp(gridPos.y, 0, flowField.gridSize.y - 1)
+            );
+            
+            return flowField.flowField.Value.directions[GridToIndex(clampedPos, flowField.gridSize)];
+        }
+
+        private float3 CalculateSteering(float3 desiredDirection, UnitMover mover, float deltaTime)
+        {
+            var desiredVelocity = desiredDirection * mover.moveSpeed;
+            var steering = desiredVelocity - mover.currentVelocity;
+            
+            float steeringMagnitude = math.length(steering);
+            if (steeringMagnitude > mover.acceleration)
+            {
+                steering = math.normalize(steering) * mover.acceleration;
+            }
+            
+            return steering;
+        }
+
+        private void ApplyDeceleration(ref UnitMover mover, float deltaTime)
+        {
+            float currentSpeed = math.length(mover.currentVelocity);
+            if (currentSpeed > 0.1f)
+            {
+                float decelerationAmount = mover.deceleration * deltaTime;
+                if (decelerationAmount >= currentSpeed)
+                {
+                    mover.currentVelocity = float3.zero;
+                }
+                else
+                {
+                    var decelerationDirection = math.normalize(mover.currentVelocity);
+                    mover.currentVelocity -= decelerationDirection * decelerationAmount;
+                }
+            }
+            else
+            {
+                mover.currentVelocity = float3.zero;
+            }
         }
     }
 }
