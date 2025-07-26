@@ -14,8 +14,10 @@ namespace MonoBehaviours
         public float cellSize = 2f;
         public float3 worldOrigin = float3.zero;
         public float maxCost = 1000f;
-        public float neighborCostMultiplier = 2.5f;
         public float maxCostChangePerUpdate = 10f;
+        [Header("Unit Avoidance")]
+        public float unitAvoidanceRadius = 3f;
+        public float unitAvoidanceStrength = 5f;
         [Header("Visualization")]
         public bool enableVisualization = true;
         public Faction visualizedFaction = Faction.Friendly;
@@ -32,11 +34,12 @@ namespace MonoBehaviours
                     gridSize = authoring.gridSize,
                     cellSize = authoring.cellSize,
                     worldOrigin = authoring.worldOrigin,
-                    neighborCostMultiplier = authoring.neighborCostMultiplier,
                     maxCost = authoring.maxCost,
                     enableVisualization = authoring.enableVisualization,
                     visualizedFaction = authoring.visualizedFaction,
-                    maxCostChangePerUpdate = authoring.maxCostChangePerUpdate
+                    maxCostChangePerUpdate = authoring.maxCostChangePerUpdate,
+                    unitAvoidanceRadius = authoring.unitAvoidanceRadius,
+                    unitAvoidanceStrength = authoring.unitAvoidanceStrength
                 });
             }
         }

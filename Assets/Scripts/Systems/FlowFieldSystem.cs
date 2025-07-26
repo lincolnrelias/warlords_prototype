@@ -129,26 +129,9 @@ namespace Systems
                 weightMultipliers[i] = 1f;
             }
 
-            // Apply same-faction unit influence
+            // Apply same-faction unit avoidance
             var sameFactionPositions = faction == Faction.Friendly ? friendlyPositions : hostilePositions;
-            for (int i = 0; i < sameFactionPositions.Length; i++)
-            {
-                int2 unitGrid = WorldToGrid(sameFactionPositions[i], settings);
-    
-                // Influence unit cell and adjacent cells
-                for (int dy = -1; dy <= 1; dy++)
-                {
-                    for (int dx = -1; dx <= 1; dx++)
-                    {
-                        int2 gridPos = unitGrid + new int2(dx, dy);
-                        if (IsValidGridPosition(gridPos, settings.gridSize))
-                        {
-                            int index = GridToIndex(gridPos, settings.gridSize);
-                            weightMultipliers[index] += settings.neighborCostMultiplier;
-                        }
-                    }
-                }
-            }
+            ApplyUnitAvoidance(sameFactionPositions, weightMultipliers, settings);
 
 
             // Set target positions (enemy faction) with zero cost
@@ -376,6 +359,42 @@ namespace Systems
 
             entities.Dispose();
             flowFieldDatas.Dispose();
+        }
+
+        private void ApplyUnitAvoidance(
+            NativeArray<float3> sameFactionPositions, 
+            NativeArray<float> weightMultipliers, 
+            FlowFieldSettings settings)
+        {
+            int avoidanceRadiusInCells = math.max(1, (int)math.ceil(settings.unitAvoidanceRadius / settings.cellSize));
+            
+            for (int i = 0; i < sameFactionPositions.Length; i++)
+            {
+                int2 unitGrid = WorldToGrid(sameFactionPositions[i], settings);
+                
+                // Apply avoidance in a circle around the unit
+                for (int dy = -avoidanceRadiusInCells; dy <= avoidanceRadiusInCells; dy++)
+                {
+                    for (int dx = -avoidanceRadiusInCells; dx <= avoidanceRadiusInCells; dx++)
+                    {
+                        int2 gridPos = unitGrid + new int2(dx, dy);
+                        if (!IsValidGridPosition(gridPos, settings.gridSize))
+                            continue;
+                            
+                        float distance = math.length(new float2(dx, dy));
+                        if (distance > avoidanceRadiusInCells)
+                            continue;
+                            
+                        int index = GridToIndex(gridPos, settings.gridSize);
+                        
+                        // Apply distance-based falloff
+                        float normalizedDistance = distance / avoidanceRadiusInCells;
+                        float avoidanceMultiplier = math.lerp(settings.unitAvoidanceStrength, 1f, normalizedDistance);
+                        
+                        weightMultipliers[index] = math.max(weightMultipliers[index], avoidanceMultiplier);
+                    }
+                }
+            }
         }
 
         // Helper methods

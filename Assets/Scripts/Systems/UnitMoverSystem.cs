@@ -67,8 +67,15 @@ namespace Systems
                     flowDirection = new float2(directDirection.x, directDirection.z);
                 }
                 
+                // Apply local unit avoidance
+                var avoidanceDirection = CalculateLocalAvoidance(ref state, currentPos, unit.ValueRO.faction, 
+                    flowFieldDatas, settings);
+                
+                // Combine flow field and avoidance directions
+                var combinedDirection = math.normalize(flowDirection + avoidanceDirection * 0.7f);
+                
                 // Apply movement and rotation with smoothing
-                MoveUnit(ref transform.ValueRW, flowDirection, ref mover.ValueRW, deltaTime);
+                MoveUnit(ref transform.ValueRW, combinedDirection, ref mover.ValueRW, deltaTime);
             }
             
             flowFieldEntities.Dispose();
@@ -203,6 +210,42 @@ namespace Systems
             }
             
             return steering;
+        }
+
+        private float2 CalculateLocalAvoidance(
+            ref SystemState state,
+            float3 unitPosition, 
+            Faction unitFaction, 
+            NativeArray<FlowFieldData> flowFieldDatas, 
+            FlowFieldSettings settings)
+        {
+            float2 avoidanceForce = float2.zero;
+            float avoidanceRadius = settings.unitAvoidanceRadius;
+            
+            // Query nearby units of the same faction
+            foreach (var (otherTransform, otherUnit) in 
+                SystemAPI.Query<RefRO<LocalTransform>, RefRO<Unit>>())
+            {
+                if (otherUnit.ValueRO.faction != unitFaction)
+                    continue;
+                    
+                float3 otherPosition = otherTransform.ValueRO.Position;
+                float3 difference = unitPosition - otherPosition;
+                float distance = math.length(difference);
+                
+                // Skip self and units outside avoidance radius
+                if (distance < 0.1f || distance > avoidanceRadius)
+                    continue;
+                
+                // Calculate repulsion force (stronger when closer)
+                float2 repulsionDirection = math.normalize(new float2(difference.x, difference.z));
+                float strength = (avoidanceRadius - distance) / avoidanceRadius;
+                strength *=strength; // Square for more dramatic falloff
+                
+                avoidanceForce += repulsionDirection * strength;
+            }
+            
+            return math.normalizesafe(avoidanceForce);
         }
 
         private void ApplyDeceleration(ref UnitMover mover, float deltaTime)

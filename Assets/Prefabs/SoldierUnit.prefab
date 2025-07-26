@@ -62,7 +62,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: minDistanceToTarget
-      value: 8
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: collisionMask.m_Bits
@@ -200,7 +200,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   accuracy: 0.2
   shootingDamage: 25
-  shootingRange: 15
+  shootingRange: 30
   atkSpeed: 0.5
   shootingForce: 40
   facingTolerance: 5

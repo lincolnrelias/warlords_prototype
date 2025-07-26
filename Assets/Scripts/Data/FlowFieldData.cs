@@ -31,9 +31,10 @@ public struct FlowFieldSettings : IComponentData
     public float3 worldOrigin;
     public float maxCost;
     public bool enableVisualization;
-    public float neighborCostMultiplier;
     public Faction visualizedFaction;
-    public float maxCostChangePerUpdate; 
+    public float maxCostChangePerUpdate;
+    public float unitAvoidanceRadius;
+    public float unitAvoidanceStrength;
 }
 
 // Helper struct for flow field calculations

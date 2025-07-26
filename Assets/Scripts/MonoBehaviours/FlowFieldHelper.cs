@@ -16,7 +16,6 @@ public class FlowFieldHelper : MonoBehaviour
     public int2 suggestedGridSize = new int2(50, 50);
     public float suggestedCellSize = 2f;
     public float3 suggestedOrigin = float3.zero;
-    public float neighborCostMultiplier = 2.5f;
     public float maxCostChangePerUpdate = 10f;
     [Tooltip("How many cells to aim for")]
     public float suggestedGridCellCount = 100f; 
@@ -124,7 +123,6 @@ public class FlowFieldHelper : MonoBehaviour
         settings.gridSize = suggestedGridSize;
         settings.cellSize = suggestedCellSize;
         settings.worldOrigin = suggestedOrigin;
-        settings.neighborCostMultiplier = neighborCostMultiplier;
         settings.maxCostChangePerUpdate = maxCostChangePerUpdate;
         entityManager.SetComponentData(entity, settings);
         
