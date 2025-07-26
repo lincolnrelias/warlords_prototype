@@ -58,7 +58,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: rotationSpeed
-      value: 4
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: -6659309453237235207, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       propertyPath: minDistanceToTarget
@@ -149,19 +149,11 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 7266134425139228173, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6592147114763239491}
-    - targetCorrespondingSourceObject: {fileID: 7266134425139228173, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
-      insertIndex: -1
       addedObject: {fileID: -4701594310359342019}
     - targetCorrespondingSourceObject: {fileID: 7266134425139228173, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
       insertIndex: -1
       addedObject: {fileID: -8638091909255539052}
   m_SourcePrefab: {fileID: 100100000, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
---- !u!1 &4885404187439128561 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8728987956230808875, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
-  m_PrefabInstance: {fileID: 4246869663214942938}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6694570354609093589 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7352140898288451855, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
@@ -172,20 +164,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 7266134425139228173, guid: c59b18c7b3061bf48a9d0ebdab4307fc, type: 3}
   m_PrefabInstance: {fileID: 4246869663214942938}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6592147114763239491
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6789624721846965463}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63e853215602cfb4aa80de89587c53a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  selectedEffect: {fileID: 4885404187439128561}
-  selectedScale: 2
 --- !u!114 &-4701594310359342019
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -202,7 +180,7 @@ MonoBehaviour:
   shootingDamage: 25
   shootingRange: 30
   atkSpeed: 0.5
-  shootingForce: 40
+  shootingForce: 50
   facingTolerance: 5
   shotPoint: {fileID: 5321886856608749615}
   bulletPrefab: {fileID: 6882168586075182343, guid: 208b6ef3d18fa904e8534a71e3c32b90, type: 3}

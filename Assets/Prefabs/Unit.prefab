@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 5219517713656176787}
   - component: {fileID: 3032630921831781931}
   - component: {fileID: 8557173199410206286}
-  - component: {fileID: 29734871726948338}
   m_Layer: 0
   m_Name: Unit
   m_TagString: Untagged
@@ -99,23 +98,8 @@ MonoBehaviour:
   moveSpeed: 5
   rotationSpeed: 5
   minDistanceToTarget: 5
-  avoidanceRadius: 5
-  avoidanceWeight: 5
-  separationStrength: 5
---- !u!114 &29734871726948338
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 578711824530267679}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63e853215602cfb4aa80de89587c53a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  selectedEffect: {fileID: 0}
-  selectedScale: 2
+  acceleration: 10
+  deceleration: 15
 --- !u!1 &5613517689110399183
 GameObject:
   m_ObjectHideFlags: 0
